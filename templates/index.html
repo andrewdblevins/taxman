@@ -15,15 +15,28 @@
                   <input type="text" class="inputName" id='EditNodeName' placeholder="node name" />
                 </label>
               </div>
+            <div class="row">
               <div class="large-12 columns">
                 <label>Node type
-		  <input type="radio" class="taxtype" name="taxtype" value="none" checked> none 
-		  <input type="radio" class="taxtype" name="taxtype" value="Genus"> Genus 
-		  <input type="radio" class="taxtype" name="taxtype" value="Difference"> Difference
-		  <input type="radio" class="taxtype" name="taxtype" value="Species"> Species 
+                                <div class="row">
+		          <input type="radio" class="taxtype" name="taxtype" value="none" checked> none
+              </div>
+              <div class="row">
+		          <input type="radio" class="taxtype" name="taxtype" value="Genus"> Genus
+                  <label>character
+                    <input type="text" class="inputCharacter" id='EditNodeSymbol' placeholder="" />
+                  </label>
+              </div>
+              <div class="row">
+		          <input type="radio" class="taxtype" name="taxtype" value="Difference"> Difference
+              </div>
+              <div class="row">
+		          <input type="radio" class="taxtype" name="taxtype" value="Species"> Species
+              </div>
                 </label>
               </div>
             </div>
+        </div>
             <div class="row">
               <div class="large-8 columns">
                 &nbsp;
@@ -80,6 +93,9 @@
         <script src="{{url_for('static',filename='jquery.js')}}"></script>
         <script src="{{url_for('static',filename='fastclick.js')}}"></script>
         <script src="{{url_for('static',filename='foundation.min.js')}}"></script>
+        <script src="{{url_for('static',filename='foundation.min.js')}}"></script>
+        <script src="{{url_for('static',filename='wilkinssymbol.js')}}"></script>
+        <script src="{{url_for('static',filename='wilkinspronounce.js')}}"></script>
         <script>
                 // for the first initialization
                 $('document').ready(function(){
@@ -101,6 +117,24 @@
                     });
                     var treeJSON = d3.json("{{url_for('static',filename='taxonomy.json')}}", draw_tree);
                 });
+
+                var data = ['exsanguinous-1', 'fish-4-2', 'birds-6-2', 'beasts-4-1', 'god-2', 'world', 'element', 'stone', 'metal', '','sdfa'];
+
+                var svg = d3.select('body').append('svg')
+                  .attr('width', 400)
+                  .attr('height', 700);
+
+                var symb = svg.selectAll('.symb')
+                  .data(data)
+                  .enter().append('path')
+                  .attr('transform', function(d, i) {
+                    return 'translate(' + (60 + (i % 2 * 200)) + ',' + 100 * Math.ceil((i + 1) / 2) + ')';
+                  })
+                  .attr('d', function(d) {
+                    return WilkinsSymbol(d, 2000);
+                  })
+                  .attr('fill', 'transparent')
+                  .attr('class', 'animatedsymb');
         </script>
 </body>
 </html>

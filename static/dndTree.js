@@ -1,5 +1,5 @@
 function close_modal() {
-        $(document).foundation('reveal', 'close');
+    $(document).foundation('reveal', 'close');
 }
 
 var tree_root;
@@ -8,107 +8,137 @@ var rename_node_modal_active = false;
 var create_node_parent = null;
 var node_to_rename = null;
 
-function generateUUID(){
+function generateUUID() {
     var d = new Date().getTime();
     var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-        var r = (d + Math.random()*16)%16 | 0;
-        d = Math.floor(d/16);
-        return (c=='x' ? r : (r&0x3|0x8)).toString(16);
+        var r = (d + Math.random() * 16) % 16 | 0;
+        d = Math.floor(d / 16);
+        return (c == 'x' ? r : (r & 0x3 | 0x8)).toString(16);
     });
     return uuid;
 };
 
-function valid_child(parent_type){
-	if(parent_type == 'Genus'){
-		return 'Difference'
-	}
-	if(parent_type == 'Difference'){
-		return 'Species'
-	}
+function valid_child(parent_type) {
+    if (parent_type == 'Genus') {
+        return 'Difference'
+    }
+    if (parent_type == 'Difference') {
+        return 'Species'
+    }
 }
 
-function create_node(create_node_parent,name){
-                id = generateUUID(); 
-                new_node = { 'name': name, 
-                             'id' :  id,
-                             'depth': create_node_parent.depth + 1,                           
-			     'taxtype' : valid_child(create_node_parent.taxtype),
-                             'children': [], 
-                             '_children':null 
-                           };
-                console.log('Create Node name: ' + name);
-                create_node_parent.children.push(new_node);
+function create_node(create_node_parent, name) {
+    id = generateUUID();
+    new_node = {
+        'name': name,
+        'id': id,
+        'depth': create_node_parent.depth + 1,
+        'taxtype': valid_child(create_node_parent.taxtype),
+        'children': [],
+        '_children': null
+    };
+    console.log('Create Node name: ' + name);
+    create_node_parent.children.push(new_node);
 }
 
 function create_nodes() {
-        if (create_node_parent && create_node_modal_active) {
-                if (create_node_parent._children != null)  {
-                        create_node_parent.children = create_node_parent._children;
-                        create_node_parent._children = null;
-                }
-                if (create_node_parent.children == null) {
-                        create_node_parent.children = [];
-                }
-                input = $('#CreateNodeName').val();
-		if (_.includes(input,',')){
-			var names = input.split(',');
-			console.log(names)
-			for (var name in names){
-				create_node(create_node_parent,names[name]);
-			}
- 		}
-		else {
-			create_node(create_node_parent,input)
-		}
-                create_node_modal_active = false;
-                $('#CreateNodeName').val('');
-
+    if (create_node_parent && create_node_modal_active) {
+        if (create_node_parent._children != null) {
+            create_node_parent.children = create_node_parent._children;
+            create_node_parent._children = null;
         }
-        close_modal();
-        outer_update(create_node_parent);
+        if (create_node_parent.children == null) {
+            create_node_parent.children = [];
+        }
+        input = $('#CreateNodeName').val();
+        if (_.includes(input, ',')) {
+            var names = input.split(',');
+            console.log(names)
+            for (var name in names) {
+                create_node(create_node_parent, names[name]);
+            }
+        } else {
+            create_node(create_node_parent, input)
+        }
+        create_node_modal_active = false;
+        $('#CreateNodeName').val('');
+
+    }
+    close_modal();
+    outer_update(create_node_parent);
+}
+
+function setSymbolNames(parent) {
+    if (!parent) return;
+
+    var children = parent.children;
+    if (children) {
+        var count = children.length;
+        for (var i = 0; i < count; i++) {
+            if (parent.taxtype == 'Genus' || parent.taxtype == 'Difference'){
+                children[i].symbolname = parent.symbolname + '-' +(i+1);
+            }
+            setSymbolNames(children[i]);
+        }
+    }
 }
 
 function edit_node() {
-        if (node_to_rename && rename_node_modal_active) {
-                name = $('#EditNodeName').val();
-                taxtype = $('input[name=taxtype]:checked','#EditNodeForm').val()
-                console.log('New Node name: ' + name);
-                console.log('New Node type: ' + taxtype);
-                node_to_rename.name = name;
-                node_to_rename.taxtype = taxtype;
-                rename_node_modal_active = false;
-
+    if (node_to_rename && rename_node_modal_active) {
+        name = $('#EditNodeName').val();
+        taxtype = $('input[name=taxtype]:checked', '#EditNodeForm').val()
+        if (taxtype == 'Genus') {
+            symbolname = $('#EditNodeSymbol').val();
+            setSymbolNames(node_to_rename);
         }
-        close_modal();
-        outer_update(node_to_rename);
+        else {
+            if (symbolname){
+                symbolname = node_to_rename.symbolname;
+            }
+            else {
+                symbolname = '';
+            }
+        }
+        console.log('New Node name: ' + name);
+        console.log('New Node type: ' + taxtype);
+        node_to_rename.name = name;
+        node_to_rename.taxtype = taxtype;
+        node_to_rename.symbolname = symbolname;
+
+        rename_node_modal_active = false;
+
+    }
+    close_modal();
+    outer_update(node_to_rename);
 }
 
 var delAdditionalFilds = function(obj) {
 
-  for (var prop in obj) {
-    if (obj.hasOwnProperty(prop)) {
-      if (prop === 'name'  || prop === 'children'|| prop === '_children'|| prop === 'taxtype') {} else {
-        delete obj[prop];
-      }
+    for (var prop in obj) {
+        if (obj.hasOwnProperty(prop)) {
+            if (prop === 'name' || prop === 'children' || prop === '_children' || prop === 'taxtype' || prop === 'symbolname') {} else {
+                delete obj[prop];
+            }
+        }
     }
-  }
-  if (obj.children) {
-    obj.children.forEach(function(v, i) {
-      delAdditionalFilds(v);
-    });
-  if (obj._children) {
-    obj._children.forEach(function(v, i) {
-      delAdditionalFilds(v);
-    });
-  }
+    if (obj.children) {
+        obj.children.forEach(function(v, i) {
+            delAdditionalFilds(v);
+        });
+    }
+    if (obj._children) {
+        obj._children.forEach(function(v, i) {
+            delAdditionalFilds(v);
+        });
+    }
 
 };
 
 var save = function(root) {
-  var newJSON = _.clone(root);
-  delAdditionalFilds(newJSON);
-  return JSON.stringify(newJSON)
-  // now you can send newJSON to your server
+    var newJSON = _.clone(root);
+    delAdditionalFilds(newJSON);
+    return JSON.stringify(newJSON)
+        // now you can send newJSON to your server
 };
 
 outer_update = null;
@@ -138,46 +168,42 @@ function draw_tree(error, treeData) {
 
 
     var diagonal = function elbow(d, i) {
-  		return "M" + d.source.y + "," + d.source.x
-      				+ "V" + d.target.x + "H" + d.target.y;
-		}
+        return "M" + d.source.y + "," + d.source.x +
+            "V" + d.target.x + "H" + d.target.y;
+    }
 
 
-    var menu = [
-            {
-                    title: 'Edit node',
-                    action: function(elm, d, i) {
-                            console.log('Rename node');
-                            $("#EditNodeName").val(d.name);
-                            rename_node_modal_active = true;
-                            node_to_rename = d
-                            $("#EditNodeName").focus();
-                            $('#EditNodeModal').foundation('reveal', 'open');
-                    }
-            },
-            {
-                    title: 'Delete node',
-                    action: function(elm, d, i) {
-                            console.log('Delete node');
-                            delete_node(d);
-                    }
-            },
-            {
-                    title: 'Create child node',
-                    action: function(elm, d, i) {
-                            console.log('Create child node');
-                            create_node_parent = d;
-                            create_node_modal_active = true;
-                            $('#CreateNodeModal').foundation('reveal', 'open');
-                            $('#CreateNodeName').focus();
-                    }
-            },
-            {
-                    title: 'Save',
-                    action: function(elm, d, i) {
-			    console.log(save(root));
-                    }
+    var menu = [{
+            title: 'Edit node',
+            action: function(elm, d, i) {
+                console.log('Rename node');
+                $("#EditNodeName").val(d.name);
+                rename_node_modal_active = true;
+                node_to_rename = d
+                $("#EditNodeName").focus();
+                $('#EditNodeModal').foundation('reveal', 'open');
             }
+        }, {
+            title: 'Delete node',
+            action: function(elm, d, i) {
+                console.log('Delete node');
+                delete_node(d);
+            }
+        }, {
+            title: 'Create child node',
+            action: function(elm, d, i) {
+                console.log('Create child node');
+                create_node_parent = d;
+                create_node_modal_active = true;
+                $('#CreateNodeModal').foundation('reveal', 'open');
+                $('#CreateNodeName').focus();
+            }
+        }, {
+            title: 'Save',
+            action: function(elm, d, i) {
+                console.log(save(root));
+            }
+        }
 
     ]
 
@@ -198,6 +224,8 @@ function draw_tree(error, treeData) {
         }
     }
 
+
+
     // Call visit function to establish maxLabelLength
     visit(treeData, function(d) {
         totalNodes++;
@@ -209,19 +237,19 @@ function draw_tree(error, treeData) {
 
     function delete_node(node) {
         visit(treeData, function(d) {
-               if (d.children) {
-                       for (var child of d.children) {
-                               if (child == node) {
-                                       d.children = _.without(d.children, child);
-                                       update(root);
-                                       break;
-                               }
-                       } 
-               }
-        },
-        function(d) {
-           return d.children && d.children.length > 0 ? d.children : null;
-       });
+                if (d.children) {
+                    for (var child of d.children) {
+                        if (child == node) {
+                            d.children = _.without(d.children, child);
+                            update(root);
+                            break;
+                        }
+                    }
+                }
+            },
+            function(d) {
+                return d.children && d.children.length > 0 ? d.children : null;
+            });
     }
 
 
@@ -308,12 +336,12 @@ function draw_tree(error, treeData) {
     var baseSvg = d3.select("#tree-container").append("svg")
         .attr("width", viewerWidth)
         .attr("height", viewerHeight);
-        
+
     baseSvg.append("rect")
         .attr("width", "100%")
         .attr("height", "100%")
         .attr("fill", "white")
-        
+
     baseSvg.call(zoomListener);
 
 
@@ -427,6 +455,12 @@ function draw_tree(error, treeData) {
         }
     }
 
+    // color a node properly
+    function colorNode(d) {
+        result = "lightsteelblue"
+        return result;
+    };
+
     var overCircle = function(d) {
         selectedNode = d;
         updateTempConnector();
@@ -436,20 +470,7 @@ function draw_tree(error, treeData) {
         updateTempConnector();
     };
 
-  // color a node properly
-  function colorNode(d) {
-        result = "#fff";
-        if (d.taxtype == "none") {
-          result = (d._children || d.children) ? "orangered" : "orange";
-        } else if (d.type == "Genus") {
-          result = (d._children || d.children) ? "yellowgreen" : "yellow";
-        } else if (d.type == "Difference") {
-          result = (d._children || d.children) ? "skyblue" : "royalblue";
-        } else {
-          result = "lightsteelblue"
-        }
-        return result;
-    }
+
 
 
     // Function to update the temporary connector indicating dragging affiliation
@@ -534,7 +555,7 @@ function draw_tree(error, treeData) {
             }
         };
         childCount(0, root);
-        var newHeight = d3.max(levelWidth) * 35; // 25 pixels per line  
+        var newHeight = d3.max(levelWidth) * 35; // 25 pixels per line
         tree = tree.size([newHeight, viewerWidth]);
 
         // Compute the new tree layout.
@@ -543,21 +564,21 @@ function draw_tree(error, treeData) {
 
         // Set widths between levels based on maxLabelLength.
         nodes.forEach(function(d) {
-	    d.y = d.depth * 100;
-	    if('taxtype' in d){
-		if(d.taxtype == 'Genus'){
-			d.y = 900;
-			}
-		if(d.taxtype == 'Difference'){
-                        d.y = 1000;
-                        }
-                if(d.taxtype == 'Species'){
-                        d.y = 1100;
-                        }
-		}
+            d.y = d.depth * 100;
+            if ('taxtype' in d) {
+                if (d.taxtype == 'Genus') {
+                    d.y = 900;
+                }
+                if (d.taxtype == 'Difference') {
+                    d.y = 1000;
+                }
+                if (d.taxtype == 'Species') {
+                    d.y = 1100;
+                }
+            }
         });
 
-        // Update the nodes…
+        // Update the nodes
         node = svgGroup.selectAll("g.node")
             .data(nodes, function(d) {
                 return d.id || (d.id = ++i);
@@ -582,7 +603,7 @@ function draw_tree(error, treeData) {
                 return d.children || d._children ? -10 : 10;
             })
             .attr("dy", ".35em")
-            .attr('class', 'nodeText')
+            .attr('class', 'nodeMeaning')
             .attr("text-anchor", function(d) {
                 return d.children || d._children ? "end" : "start";
             })
@@ -596,7 +617,7 @@ function draw_tree(error, treeData) {
             .attr('class', 'ghostCircle')
             .attr("r", 30)
             .attr("opacity", 0.2) // change this to zero to hide the target area
-        .style("fill", "red")
+            .style("fill", "red")
             .attr('pointer-events', 'mouseover')
             .on("mouseover", function(node) {
                 overCircle(node);
@@ -605,10 +626,44 @@ function draw_tree(error, treeData) {
                 outCircle(node);
             });
 
+        // attach symbol to node
+        nodeEnter.append('path')
+            .attr("d",function(d,i){
+                if ( d.symbolname != null){
+                    return WilkinsSymbol(d.symbolname,100)
+                }
+
+            })
+            .attr("transform", function(d) {
+            return d.children || d._children ? "translate(-25,15)" : "translate(25,0)";
+            })
+            .attr("text-anchor", function(d) {
+            return d.children || d._children ? "end" : "start";
+            })
+            .attr('fill','transparent')
+            .attr('class','animatedsymb')
+
+        // attach pronunciation to node
+        nodeEnter.append('text')
+            .text(function(d,i){
+                if ( d.symbolname != null){
+                    return pronounce(d.symbolname)
+                    }
+                return ""
+            })
+            .attr("transform", function(d) {
+            return d.children || d._children ? "translate(-15,30)" :
+            "translate(45,4)";
+            })
+            .attr("text-anchor", function(d) {
+            return d.children || d._children ? "end" : "start";
+            })
+            .attr("class","nodePronounce")
+            
         // Update the text to reflect whether node has children or not.
-        node.select('text')
+        node.select('.nodeMeaning')
             .attr("x", function(d) {
-                return d.children || d._children ? -10 : 10;
+                return d.children || d._children ? -10 : 80;
             })
             .attr("text-anchor", function(d) {
                 return d.children || d._children ? "end" : "start";
@@ -713,5 +768,3 @@ function draw_tree(error, treeData) {
     centerNode(root);
     tree_root = root;
 }
-
-
